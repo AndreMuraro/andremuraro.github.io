@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>André Muraro</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Senior data and AI engineer: data platforms and the AI products on top of them.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Schibsted+Grotesk:wght@500;650;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<style>
+/* Layout: one 68ch reading column; a wider band for the stat strip and case-study list. Data-instrument feel: mono labels, hairline rules, one teal accent. */
+:root {
+  --bg: #F5F7F7;
+  --surface: #FFFFFF;
+  --fg: #142024;
+  --muted: #4E5E63;
+  --rule: #D3DCDE;
+  --accent: #0E5A66;
+  --accent-soft: #E3EEEF;
+  --display: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --body: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0D1416; --surface: #131D20; --fg: #E4ECEE; --muted: #9FB0B5; --rule: #24343A; --accent: #6CC3CF; --accent-soft: #16292D; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0D1416; --surface: #131D20; --fg: #E4ECEE; --muted: #9FB0B5; --rule: #24343A; --accent: #6CC3CF; --accent-soft: #16292D; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font-family: var(--body); font-size: 1.0625rem; line-height: 1.65;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+a { color: var(--accent); text-underline-offset: 3px; }
+a:hover { text-decoration-thickness: 2px; }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+.wrap { max-width: 68ch; margin: 0 auto; }
+.wide { max-width: 1040px; margin: 0 auto; }
+header.site { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px 24px; padding-block: 28px 0; }
+header.site .name { font-family: var(--display); font-weight: 700; font-size: 1.05rem; color: var(--fg); text-decoration: none; letter-spacing: -0.01em; }
+header.site nav { display: flex; flex-wrap: wrap; gap: 6px 20px; font-family: var(--mono); font-size: 0.8rem; }
+header.site nav a { color: var(--muted); text-decoration: none; }
+header.site nav a:hover { color: var(--accent); }
+h1, h2, h3 { font-family: var(--display); line-height: 1.15; text-wrap: balance; letter-spacing: -0.015em; margin: 0; }
+h1 { font-size: clamp(2.1rem, 5vw, 3.3rem); font-weight: 700; }
+h2 { font-size: 1.45rem; font-weight: 700; }
+h3 { font-size: 1.15rem; font-weight: 650; }
+.label { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.lede { font-size: 1.25rem; line-height: 1.5; color: var(--fg); max-width: 34ch; }
+p { margin: 0; text-wrap: pretty; }
+.stack { display: flex; flex-direction: column; gap: 18px; }
+section { padding-block: 40px; border-top: 1px solid var(--rule); }
+footer { padding-block: 32px 48px; border-top: 1px solid var(--rule); font-family: var(--mono); font-size: 0.8rem; color: var(--muted); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; }
+code, .mono { font-family: var(--mono); font-size: 0.88em; }
+@media (prefers-reduced-motion: no-preference) { a { transition: color .15s ease; } }
+</style>
+</head>
+<body>
+<style>
+.hero { padding-block: 56px 48px; display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 40px; align-items: end; }
+.spec { font-family: var(--mono); font-size: 0.8rem; line-height: 1.7; background: var(--surface); border: 1px solid var(--rule); padding: 16px 18px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 16px; }
+.spec dt { color: var(--muted); }
+.spec dd { margin: 0; color: var(--fg); }
+.facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 2px solid var(--accent); border-bottom: 1px solid var(--rule); }
+.fact { padding: 18px 16px 18px 0; display: flex; flex-direction: column; gap: 4px; }
+.fact + .fact { padding-left: 16px; border-left: 1px solid var(--rule); }
+.fact b { font-family: var(--display); font-size: 1.6rem; font-weight: 700; color: var(--accent); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.fact span { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); line-height: 1.45; }
+.cases { display: flex; flex-direction: column; }
+.case { display: grid; grid-template-columns: 9rem minmax(0, 1fr); gap: 8px 24px; padding-block: 22px; border-bottom: 1px solid var(--rule); }
+.case:first-of-type { border-top: 1px solid var(--rule); }
+.case .meta { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); line-height: 1.6; }
+.case h3 a { color: var(--fg); text-decoration: none; }
+.case h3 a:hover { color: var(--accent); }
+.status { display: inline-block; font-family: var(--mono); font-size: 0.7rem; padding: 1px 7px; border: 1px solid var(--rule); color: var(--muted); margin-left: 8px; vertical-align: 2px; }
+.status.live { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.oss { background: var(--surface); border: 1px solid var(--rule); border-left: 3px solid var(--accent); padding: 22px 24px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px 32px; align-items: start; }
+.oss h3 a { color: var(--fg); text-decoration: none; }
+.oss h3 a:hover { color: var(--accent); }
+.oss .try { font-family: var(--mono); font-size: 0.85rem; background: var(--bg); border: 1px solid var(--rule); padding: 8px 12px; overflow-x: auto; white-space: nowrap; }
+.oss .try::before { content: "$ "; color: var(--muted); }
+.oss ul { list-style: none; margin: 0; padding: 0; font-family: var(--mono); font-size: 0.78rem; line-height: 1.9; }
+.oss li::before { content: "\2192  "; color: var(--muted); }
+.timeline { display: grid; grid-template-columns: 9rem minmax(0, 1fr); gap: 10px 24px; font-size: 1rem; }
+.timeline dt { font-family: var(--mono); font-size: 0.78rem; color: var(--muted); padding-top: 3px; }
+.timeline dd { margin: 0; }
+@media (max-width: 720px) {
+  .hero { grid-template-columns: minmax(0, 1fr); padding-block: 36px 32px; }
+  .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fact:nth-child(3) { padding-left: 0; border-left: 0; }
+  .fact:nth-child(n+3) { border-top: 1px solid var(--rule); }
+  .case, .timeline, .oss { grid-template-columns: minmax(0, 1fr); }
+}
+</style>
+
+<div class="wide">
+<header class="site">
+  <a class="name" href="index.html">André Muraro</a>
+  <nav aria-label="Main">
+    <a href="#open-source">Open source</a>
+    <a href="#work">Work</a>
+    <a href="#experience">Experience</a>
+    <a href="https://github.com/andremuraro">GitHub</a>
+    <a href="https://www.linkedin.com/in/andre-muraro">LinkedIn</a>
+  </nav>
+</header>
+
+<div class="hero">
+  <div class="stack">
+    <span class="label">Senior Data &amp; AI Engineer</span>
+    <h1>I build data platforms and the AI products on top of them, then take them to production.</h1>
+  </div>
+  <dl class="spec" aria-label="At a glance">
+    <dt>role</dt><dd>tech lead, data + AI</dd>
+    <dt>stack</dt><dd>Python · Snowflake · Databricks · FastAPI · MCP · AWS</dd>
+    <dt>based</dt><dd>Brazil, UTC−3, remote</dd>
+    <dt>hours</dt><dd>US Pacific → Eastern Europe</dd>
+    <dt>open to</dt><dd>senior AI / data roles abroad</dd>
+  </dl>
+</div>
+
+<div class="facts" role="list">
+  <div class="fact" role="listitem"><b>12 weeks</b><span>AI agent memory platform, design to production</span></div>
+  <div class="fact" role="listitem"><b>1e-9</b><span>relative tolerance, parity backtest on every row since 2020</span></div>
+  <div class="fact" role="listitem"><b>23</b><span>implementation gaps found in production SQL before a rebuild</span></div>
+  <div class="fact" role="listitem"><b>10 years</b><span>trading, asset servicing, pensions, consumer analytics</span></div>
+</div>
+</div>
+
+<div class="wide">
+<section id="open-source" class="stack" aria-labelledby="oss-h">
+  <h2 id="oss-h">Open source</h2>
+  <article class="oss">
+    <div class="stack" style="gap: 10px">
+      <h3><a href="https://github.com/AndreMuraro/warehouse-context-mcp">warehouse-context-mcp</a><span class="status live">released</span></h3>
+      <p>An MCP server that gives AI agents governed context about a data warehouse: what each table means, where it comes from, how fresh it is, and a read-only way to query it. Snowflake, Databricks and DuckDB; from Claude, Codex or VS Code.</p>
+      <p>Every query is treated as hostile. Only allow-listed SQL runs, every column is resolved against the live schema, and PII is masked inside the SQL so values never leave the warehouse. Two independent adversarial reviews tried to break it; their attacks now run on every commit.</p>
+      <div class="try">uvx warehouse-context-mcp --demo</div>
+    </div>
+    <ul aria-label="Links">
+      <li><a href="https://github.com/AndreMuraro/warehouse-context-mcp">source</a></li>
+      <li><a href="https://pypi.org/project/warehouse-context-mcp/">PyPI</a></li>
+      <li><a href="https://registry.modelcontextprotocol.io/v0/servers?search=io.github.AndreMuraro/warehouse-context-mcp">MCP Registry</a></li>
+      <li><a href="https://github.com/AndreMuraro/warehouse-context-mcp/blob/main/docs/threat-model.md">threat model</a></li>
+    </ul>
+  </article>
+</section>
+</div>
+
+<div class="wide">
+<section id="work" class="stack" aria-labelledby="work-h">
+  <h2 id="work-h">Selected work</h2>
+  <p style="color: var(--muted); max-width: 60ch">Write-ups of work done under client contracts. Clients are described, not named, and no proprietary code or data appears.</p>
+  <div class="cases">
+    <article class="case">
+      <div class="meta">2026<br>AI platform<br>tech lead</div>
+      <div class="stack" style="gap: 6px">
+        <h3><a href="agent-memory-platform.html">Governed memory for AI coding agents</a><span class="status live">case study</span></h3>
+        <p>A multi-tenant MCP platform that lets agents keep what they learn across sessions without leaking it between clients, and proves whether they use it. Design to production in about 12 weeks.</p>
+      </div>
+    </article>
+    <article class="case">
+      <div class="meta">2026<br>trading analytics<br>tech lead</div>
+      <div class="stack" style="gap: 6px">
+        <h3>Rebuilding a voyage-economics engine with proof of parity<span class="status">write-up in progress</span></h3>
+        <p>Reverse-engineering production SQL into a formal spec, then backtesting the new Python engine against every historical row at 1e-9 tolerance.</p>
+      </div>
+    </article>
+    <article class="case">
+      <div class="meta">2026<br>compliance data<br>product lead</div>
+      <div class="stack" style="gap: 6px">
+        <h3>When the legacy dashboard was wrong<span class="status">write-up in progress</span></h3>
+        <p>Rebuilding a sanctions-diligence product on a new data foundation, and showing with set differences that most of the old tool's flagged records were false positives.</p>
+      </div>
+    </article>
+  </div>
+</section>
+
+<section id="experience" class="stack" aria-labelledby="exp-h">
+  <h2 id="exp-h">Experience</h2>
+  <dl class="timeline">
+    <dt>2024 – now</dt><dd><strong>Independent, B2B.</strong> Umbrage: AI platforms and full-stack data products for enterprise clients. Dexian: freight analytics for ExxonMobil Trading.</dd>
+    <dt>2023 – 2024</dt><dd><strong>Data Engineer, Pinterest</strong> (via BairesDev). Snowflake pipelines and extraction tooling for multiple teams.</dd>
+    <dt>2021 – 2023</dt><dd><strong>Software Engineer, XP Investimentos.</strong> Central automation platform and data tooling.</dd>
+    <dt>2015 – 2021</dt><dd><strong>BNY Mellon, Fundação Petros.</strong> Anomaly detection, data ingestion, ETL and compliance reporting.</dd>
+  </dl>
+  <p class="mono" style="color: var(--muted)">Full CV available on request · andrmuraro@gmail.com</p>
+</section>
+
+<footer>
+  <span>André Muraro · Data &amp; AI engineering</span>
+  <span><a href="https://github.com/andremuraro">github.com/andremuraro</a> · <a href="https://www.linkedin.com/in/andre-muraro">linkedin.com/in/andre-muraro</a></span>
+</footer>
+</div>
+
+</body>
+</html>

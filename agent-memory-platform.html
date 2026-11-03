@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Governed memory for AI coding agents · André Muraro</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Case study: a multi-tenant MCP memory platform for AI coding agents, design to production in about 12 weeks.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Schibsted+Grotesk:wght@500;650;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<style>
+/* Layout: one 68ch reading column; a wider band for the stat strip and case-study list. Data-instrument feel: mono labels, hairline rules, one teal accent. */
+:root {
+  --bg: #F5F7F7;
+  --surface: #FFFFFF;
+  --fg: #142024;
+  --muted: #4E5E63;
+  --rule: #D3DCDE;
+  --accent: #0E5A66;
+  --accent-soft: #E3EEEF;
+  --display: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --body: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0D1416; --surface: #131D20; --fg: #E4ECEE; --muted: #9FB0B5; --rule: #24343A; --accent: #6CC3CF; --accent-soft: #16292D; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0D1416; --surface: #131D20; --fg: #E4ECEE; --muted: #9FB0B5; --rule: #24343A; --accent: #6CC3CF; --accent-soft: #16292D; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font-family: var(--body); font-size: 1.0625rem; line-height: 1.65;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+a { color: var(--accent); text-underline-offset: 3px; }
+a:hover { text-decoration-thickness: 2px; }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+.wrap { max-width: 68ch; margin: 0 auto; }
+.wide { max-width: 1040px; margin: 0 auto; }
+header.site { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px 24px; padding-block: 28px 0; }
+header.site .name { font-family: var(--display); font-weight: 700; font-size: 1.05rem; color: var(--fg); text-decoration: none; letter-spacing: -0.01em; }
+header.site nav { display: flex; flex-wrap: wrap; gap: 6px 20px; font-family: var(--mono); font-size: 0.8rem; }
+header.site nav a { color: var(--muted); text-decoration: none; }
+header.site nav a:hover { color: var(--accent); }
+h1, h2, h3 { font-family: var(--display); line-height: 1.15; text-wrap: balance; letter-spacing: -0.015em; margin: 0; }
+h1 { font-size: clamp(2.1rem, 5vw, 3.3rem); font-weight: 700; }
+h2 { font-size: 1.45rem; font-weight: 700; }
+h3 { font-size: 1.15rem; font-weight: 650; }
+.label { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.lede { font-size: 1.25rem; line-height: 1.5; color: var(--fg); max-width: 34ch; }
+p { margin: 0; text-wrap: pretty; }
+.stack { display: flex; flex-direction: column; gap: 18px; }
+section { padding-block: 40px; border-top: 1px solid var(--rule); }
+footer { padding-block: 32px 48px; border-top: 1px solid var(--rule); font-family: var(--mono); font-size: 0.8rem; color: var(--muted); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; }
+code, .mono { font-family: var(--mono); font-size: 0.88em; }
+@media (prefers-reduced-motion: no-preference) { a { transition: color .15s ease; } }
+</style>
+</head>
+<body>
+<style>
+article.cs { padding-block: 48px 24px; display: flex; flex-direction: column; gap: 22px; }
+article.cs h2 { margin-top: 18px; }
+article.cs ul { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 8px; }
+.facts-inline { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border-top: 2px solid var(--accent); border-bottom: 1px solid var(--rule); font-family: var(--mono); font-size: 0.78rem; color: var(--muted); }
+.facts-inline div { padding: 12px 12px 12px 0; }
+.facts-inline div + div { padding-left: 12px; border-left: 1px solid var(--rule); }
+.facts-inline b { display: block; font-family: var(--display); font-size: 1.3rem; color: var(--accent); font-variant-numeric: tabular-nums; }
+.flow { overflow-x: auto; background: var(--surface); border: 1px solid var(--rule); padding: 16px; }
+.flow pre { margin: 0; font-family: var(--mono); font-size: 0.8rem; line-height: 1.6; color: var(--fg); }
+.note { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); border-left: 2px solid var(--rule); padding-left: 12px; }
+@media (max-width: 560px) { .facts-inline { grid-template-columns: minmax(0, 1fr); } .facts-inline div + div { padding-left: 0; border-left: 0; border-top: 1px solid var(--rule); } }
+</style>
+
+<div class="wrap">
+<header class="site">
+  <a class="name" href="index.html">André Muraro</a>
+  <nav aria-label="Main">
+    <a href="index.html#work">Work</a>
+    <a href="https://github.com/andremuraro">GitHub</a>
+    <a href="https://www.linkedin.com/in/andre-muraro">LinkedIn</a>
+  </nav>
+</header>
+
+<article class="cs">
+  <span class="label">Case study · 2026 · tech lead and principal engineer</span>
+  <h1>Governed memory for AI coding agents</h1>
+  <p class="lede">AI coding agents forget everything between sessions. We gave them a memory they could share, without letting one client's knowledge reach another, and measured whether they actually used it.</p>
+
+  <div class="facts-inline">
+    <div><b>~12 weeks</b>MVP design to production</div>
+    <div><b>~1,400</b>automated tests across 4 repos</div>
+    <div><b>1 ring</b>per session, fail-closed</div>
+  </div>
+
+  <h2>The problem</h2>
+  <p>Engineers at a consultancy use agents in Claude Code, Codex and other editors every day. Each session starts from zero: the agent relearns the codebase, repeats mistakes someone already fixed, and never benefits from decisions made last week. The obvious fix, a shared memory, collides with the consultancy's first obligation: knowledge from one client engagement must never reach another.</p>
+  <p>So the job was not "add memory". It was memory with isolation, auditability and evidence of value, built quickly enough to matter.</p>
+
+  <h2>Scope before code</h2>
+  <p>The program started broader than twelve weeks allowed. I led a scope reset that cut the MVP down to the memory and governance layer, wrote a roadmap with phase gates and kill criteria agreed before work began, and kept a log of more than twenty decisions with their rationale. The work split into four repositories: application, Terraform, GitOps and program.</p>
+  <p>Agreeing on kill criteria up front turned later debates into checks against the criteria, not arguments about sunk cost.</p>
+
+  <h2>One front door</h2>
+  <p>Every agent connects to a single entry-point service built with Python, FastAPI and the MCP SDK. It is the only place where identity is decided:</p>
+  <div class="flow" role="img" aria-label="Request flow from an agent through the front door to a per-engagement memory engine">
+<pre>agent (Claude Code, Codex, ...)
+   │  MCP + OAuth 2.1 token (Entra ID)
+   ▼
+front door ── verify token ── bind session to exactly one engagement ("ring")
+   │            cannot confirm access? ──► refuse (fail closed)
+   │  signed identity
+   ▼
+memory engine for that ring  (own encryption key, own placement)
+   │
+   └──► audit record for every tool call</pre>
+  </div>
+  <ul>
+    <li>A session belongs to one engagement for its whole life. Anything ambiguous is refused.</li>
+    <li>The front door signs the identity it passes downstream, so engines never trust the caller directly. Signing keys rotate, and the service runs as multiple replicas.</li>
+    <li>Every tool call writes an audit record.</li>
+  </ul>
+
+  <h2>Isolation at every layer</h2>
+  <p>A single check is a single point of failure, so isolation is repeated at each layer:</p>
+  <ul>
+    <li><strong>Data:</strong> each engagement has its own encryption key and its own engine placement.</li>
+    <li><strong>Configuration:</strong> engagements are created from a reviewed file in Git, never by hand.</li>
+    <li><strong>Automation:</strong> CI pipelines get access through a GitHub OIDC machine identity bound to one engagement.</li>
+    <li><strong>Verification:</strong> an automated leakage drill and per-engagement canary probes run in CI and in production, and any failure raises an alert.</li>
+  </ul>
+
+  <h2>Proving it is used</h2>
+  <p>AI tooling is easy to launch and hard to justify. The platform links each recall to the later moment when what it returned is cited in the agent's work. A Postgres telemetry pipeline rolls that up daily and monthly, reconciles counts against the audit records, and uses retention rules that cannot delete data before it has been rolled up.</p>
+  <p>Usage baselines were frozen for each engagement before recall was switched on, so the dashboards show change against a real before, including knowledge recalled across different users.</p>
+
+  <h2>Infrastructure</h2>
+  <p>AWS from development to production: Terraform modules for the account baseline, EKS, tenants and telemetry, with separate plan and apply roles through GitHub OIDC; Flux GitOps for cluster state; images pinned by digest and promoted from dev to prod through a verified step; default-deny network policies; and an embedding model baked into its image so the cluster needs no internet access. Observability runs on the Grafana LGTM stack.</p>
+
+  <h2>How we built it</h2>
+  <ul>
+    <li>The repositories used their own product: agents recalled from and wrote to the platform while building it.</li>
+    <li>Every pull request got a red-team pass that required running the code to prove its claims, and CI checked that the evidence was there.</li>
+    <li>Developers connect with one command and single sign-on; operators create, check and offboard engagements by opening reviewed pull requests, with quota preflight checks and rollback.</li>
+  </ul>
+
+  <h2>What I would keep</h2>
+  <ul>
+    <li>Decide identity in exactly one place and make everything downstream verify it.</li>
+    <li>Treat "can't confirm" as "no".</li>
+    <li>Freeze the baseline before launch, or adoption numbers mean nothing.</li>
+    <li>Kill criteria are cheapest to agree on before anyone has written code.</li>
+  </ul>
+
+  <p class="note">Built at Umbrage. Stack: Python 3.14 · FastAPI · MCP · PostgreSQL/pgvector · Entra ID · AWS EKS, KMS, IAM/OIDC · Terraform · Flux · Grafana LGTM · GitHub Actions.</p>
+</article>
+
+<footer>
+  <a href="index.html">← All work</a>
+  <span>andrmuraro@gmail.com</span>
+</footer>
+</div>
+
+</body>
+</html>
