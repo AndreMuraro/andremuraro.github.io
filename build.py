@@ -4,6 +4,7 @@
 #     "markdown-it-py>=4.0",
 #     "mdit-py-plugins>=0.5",
 #     "pygments>=2.19",
+#     "pillow>=12.0",
 #     "pyyaml>=6.0.2",
 # ]
 # ///
@@ -16,9 +17,17 @@ markers that the build fills once at least one post is published:
 - ``<!-- writing:latest -->`` becomes a section listing the latest posts.
 
 Posts are Markdown files in ``posts/`` with YAML front matter (``title``, ``date``,
-``summary``, optional ``tags`` and ``draft``). Work in progress goes in ``drafts/``, which
-git ignores, so it never reaches the public repository. Drafts (that folder, or
-``draft: true``) are built only with ``--drafts``.
+``summary``, optional ``tags``, ``draft`` and ``image``).
+
+Every post gets a share image (``og:image``) for LinkedIn and other link previews. By
+default the build draws a 1200x630 title card into ``/writing/<slug>/card.png``. To use a
+photo or illustration instead, put it in ``assets/img/`` (1200x630 or larger, 1.91:1,
+under 5 MB) and set ``image`` (path from the repo root, e.g. ``assets/img/x.jpg``),
+``image_alt`` and, for stock photos, ``image_credit`` (shown under the post). The home
+page and the writing index share a site card, ``/assets/share.png``.
+
+Work in progress goes in ``drafts/``, which git ignores, so it never reaches the public
+repository. Drafts (that folder, or ``draft: true``) are built only with ``--drafts``.
 
 Usage::
 
@@ -45,6 +54,7 @@ import yaml
 from markdown_it import MarkdownIt
 from mdit_py_plugins.anchors import anchors_plugin
 from mdit_py_plugins.footnote import footnote_plugin
+from PIL import Image, ImageDraw, ImageFont
 from pygments import highlight as pygments_highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import get_lexer_by_name
@@ -57,6 +67,10 @@ WORDS_PER_MINUTE = 220
 LATEST_ON_HOME = 3
 FRONT_MATTER = re.compile(r"\A---\n(.*?)\n---\n", re.DOTALL)
 DATED_NAME = re.compile(r"^\d{4}-\d{2}-\d{2}-")
+CARD_SIZE = (1200, 630)
+CARD_FONTS = ROOT / "og" / "fonts"
+CARD_MAX_LINES = 4
+SITE_CARD = "/assets/share.png"
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,6 +83,9 @@ class Post:
     draft: bool
     body_html: str
     minutes: int
+    image: str | None = None  # repo-relative path of a chosen image; None = generated card
+    image_alt: str = ""
+    image_credit: str = ""
 
     @property
     def path(self) -> str:
@@ -77,6 +94,10 @@ class Post:
     @property
     def url(self) -> str:
         return SITE_URL + self.path
+
+    @property
+    def image_path(self) -> str:
+        return "/" + self.image if self.image else self.path + "card.png"
 
     @property
     def human_date(self) -> str:
@@ -115,6 +136,18 @@ def load_post(path: Path, md: MarkdownIt) -> Post:
         raise SystemExit(msg)
     body = text[match.end() :]
     words = len(re.findall(r"\w+", body))
+    image = meta.get("image")
+    if image is not None:
+        image = str(image).lstrip("/")
+        if not (ROOT / image).is_file():
+            msg = f"{path.name}: image {image} not found"
+            raise SystemExit(msg)
+        if not image.startswith("assets/"):
+            msg = f"{path.name}: image must live under assets/ (got {image})"
+            raise SystemExit(msg)
+        if not meta.get("image_alt"):
+            msg = f"{path.name}: image needs image_alt"
+            raise SystemExit(msg)
     published = meta["date"]
     if not isinstance(published, date):
         published = date.fromisoformat(str(published))
@@ -127,6 +160,9 @@ def load_post(path: Path, md: MarkdownIt) -> Post:
         draft=bool(meta.get("draft", False)) or path.parent.name == "drafts",
         body_html=md.render(body),
         minutes=max(1, math.ceil(words / WORDS_PER_MINUTE)),
+        image=image,
+        image_alt=str(meta.get("image_alt", "")).strip(),
+        image_credit=str(meta.get("image_credit", "")).strip(),
     )
 
 
@@ -166,8 +202,104 @@ def _post_list(posts: list[Post]) -> str:
     return f'<ol class="posts" reversed>\n{items}\n</ol>'
 
 
+# --- share images ---------------------------------------------------------------------
+
+_CARD = {
+    "bg": "#0D1416",
+    "fg": "#E4ECEE",
+    "muted": "#9FB0B5",
+    "rule": "#24343A",
+    "accent": "#6CC3CF",
+}
+
+
+def _font(name: str, size: int) -> ImageFont.FreeTypeFont:
+    return ImageFont.truetype(str(CARD_FONTS / name), size)
+
+
+def _wrap(
+    draw: ImageDraw.ImageDraw, text: str, font: ImageFont.FreeTypeFont, width: int
+) -> list[str]:
+    lines: list[str] = []
+    for word in text.split():
+        trial = f"{lines[-1]} {word}" if lines else word
+        if lines and draw.textlength(trial, font=font) <= width:
+            lines[-1] = trial
+        else:
+            lines.append(word)
+    return lines
+
+
+def draw_card(label: str, title: str, out: Path) -> None:
+    """Draw a 1200x630 title card in the site's dark palette, for link previews."""
+    w, h = CARD_SIZE
+    pad = 80
+    img = Image.new("RGB", CARD_SIZE, _CARD["bg"])
+    draw = ImageDraw.Draw(img)
+    draw.rectangle((0, 0, w, 10), fill=_CARD["accent"])
+    draw.text(
+        (pad, 78), label.upper(), font=_font("JetBrainsMono-Medium.ttf", 24), fill=_CARD["accent"]
+    )
+
+    box_top, box_bottom = 140, h - 150
+    for size in range(78, 40, -4):
+        font = _font("SchibstedGrotesk-Bold.ttf", size)
+        lines = _wrap(draw, title, font, w - 2 * pad)
+        line_h = round(size * 1.14)
+        if len(lines) <= CARD_MAX_LINES and len(lines) * line_h <= box_bottom - box_top:
+            break
+    y = box_top + (box_bottom - box_top - len(lines) * line_h) // 2
+    for line in lines:
+        draw.text((pad, y), line, font=font, fill=_CARD["fg"])
+        y += line_h
+
+    draw.line((pad, h - 112, w - pad, h - 112), fill=_CARD["rule"], width=2)
+    draw.text(
+        (pad, h - 82), AUTHOR, font=_font("SchibstedGrotesk-Medium.ttf", 30), fill=_CARD["fg"]
+    )
+    site = SITE_URL.removeprefix("https://")
+    mono = _font("JetBrainsMono-Medium.ttf", 24)
+    draw.text(
+        (w - pad - draw.textlength(site, font=mono), h - 76), site, font=mono, fill=_CARD["muted"]
+    )
+    out.parent.mkdir(parents=True, exist_ok=True)
+    img.save(out, optimize=True)
+
+
+def _image_size(path: Path) -> tuple[int, int]:
+    with Image.open(path) as img:
+        return img.size
+
+
+def share_meta(image_path: str, alt: str, size: tuple[int, int]) -> str:
+    """Open Graph and Twitter tags for a page's share image."""
+    url = SITE_URL + image_path
+    alt = html.escape(alt)
+    return f"""<meta property="og:image" content="{url}">
+<meta property="og:image:width" content="{size[0]}">
+<meta property="og:image:height" content="{size[1]}">
+<meta property="og:image:alt" content="{alt}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="{url}">"""
+
+
 def render_post(post: Post) -> str:
     tags = " · ".join(html.escape(t) for t in post.tags)
+    if post.image:
+        size = _image_size(ROOT / post.image)
+        alt = post.image_alt
+        hero = (
+            f'<figure class="hero"><img src="{post.image_path}" alt="{html.escape(alt)}" '
+            f'width="{size[0]}" height="{size[1]}">'
+            + (
+                f"<figcaption>{html.escape(post.image_credit)}</figcaption>"
+                if post.image_credit
+                else ""
+            )
+            + "</figure>"
+        )
+    else:
+        size, alt, hero = CARD_SIZE, f"{post.title}, by {AUTHOR}", ""
     return _template("post.html").substitute(
         title=html.escape(post.title),
         summary=html.escape(post.summary),
@@ -178,12 +310,18 @@ def render_post(post: Post) -> str:
         tags=f'<p class="tags">{tags}</p>' if tags else "",
         body=post.body_html,
         robots='<meta name="robots" content="noindex">' if post.draft else "",
+        share=share_meta(post.image_path, alt, size),
+        hero=hero,
     )
 
 
 def render_writing_index(posts: list[Post]) -> str:
     listing = _post_list(posts) if posts else '<p class="empty">No posts yet.</p>'
-    return _template("writing.html").substitute(posts=listing, url=f"{SITE_URL}/writing/")
+    return _template("writing.html").substitute(
+        posts=listing,
+        url=f"{SITE_URL}/writing/",
+        share=share_meta(SITE_CARD, f"{AUTHOR}: writing", CARD_SIZE),
+    )
 
 
 def render_feed(posts: list[Post]) -> str:
@@ -242,6 +380,7 @@ def code_css() -> str:
 
 
 def fill_markers(page: str, posts: list[Post]) -> str:
+    page = page.replace("<!-- share:site -->", share_meta(SITE_CARD, AUTHOR, CARD_SIZE))
     if not posts:
         return page
     latest = f"""<section id="writing" class="stack" aria-labelledby="writing-h">
@@ -269,8 +408,12 @@ def build(out: Path, *, include_drafts: bool) -> list[Post]:
         if page.name not in {"index.html", "404.html"}:
             pages.append(f"/{page.name}")
 
-    for asset in (ROOT / "assets").iterdir():
-        shutil.copy2(asset, out / "assets" / asset.name)
+    shutil.copytree(ROOT / "assets", out / "assets", dirs_exist_ok=True)
+    draw_card(
+        "Senior data & AI engineer",
+        "Data platforms and the AI products on top of them.",
+        out / SITE_CARD.lstrip("/"),
+    )
     (out / "assets" / "code.css").write_text(code_css(), encoding="utf-8")
 
     (out / "writing").mkdir()
@@ -280,6 +423,8 @@ def build(out: Path, *, include_drafts: bool) -> list[Post]:
         target = out / "writing" / post.slug
         target.mkdir()
         (target / "index.html").write_text(render_post(post), encoding="utf-8")
+        if not post.image:
+            draw_card(f"Writing · {post.human_date}", post.title, target / "card.png")
         if not post.draft:
             pages.append(post.path)
 
