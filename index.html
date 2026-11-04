@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>André Muraro</title>
+<link rel="alternate" type="application/atom+xml" title="André Muraro · Writing" href="/feed.xml">
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="Senior data and AI engineer: data platforms and the AI products on top of them.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Schibsted+Grotesk:wght@500;650;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
@@ -82,14 +83,22 @@ code, .mono { font-family: var(--mono); font-size: 0.88em; }
 .oss { background: var(--surface); border: 1px solid var(--rule); border-left: 3px solid var(--accent); padding: 22px 24px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px 32px; align-items: start; }
 .oss h3 a { color: var(--fg); text-decoration: none; }
 .oss h3 a:hover { color: var(--accent); }
-.oss .try { font-family: var(--mono); font-size: 0.85rem; background: var(--bg); border: 1px solid var(--rule); padding: 8px 12px; overflow-x: auto; white-space: nowrap; }
+.oss .try { font-variant-ligatures: none; font-family: var(--mono); font-size: 0.85rem; background: var(--bg); border: 1px solid var(--rule); padding: 8px 12px; overflow-x: auto; white-space: nowrap; }
 .oss .try::before { content: "$ "; color: var(--muted); }
 .oss ul { list-style: none; margin: 0; padding: 0; font-family: var(--mono); font-size: 0.78rem; line-height: 1.9; }
 .oss li::before { content: "\2192  "; color: var(--muted); }
 .timeline { display: grid; grid-template-columns: 9rem minmax(0, 1fr); gap: 10px 24px; font-size: 1rem; }
 .timeline dt { font-family: var(--mono); font-size: 0.78rem; color: var(--muted); padding-top: 3px; }
 .timeline dd { margin: 0; }
+.posts { list-style: none; margin: 0; padding: 0; }
+.posts li { display: grid; grid-template-columns: 9rem minmax(0, 1fr); gap: 6px 24px; padding-block: 20px; border-bottom: 1px solid var(--rule); }
+.posts li:first-child { border-top: 1px solid var(--rule); }
+.posts time { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); padding-top: 4px; }
+.posts h3 a { color: var(--fg); text-decoration: none; }
+.posts h3 a:hover { color: var(--accent); }
+.posts p { margin-top: 6px; }
 @media (max-width: 720px) {
+  .posts li { grid-template-columns: minmax(0, 1fr); }
   .hero { grid-template-columns: minmax(0, 1fr); padding-block: 36px 32px; }
   .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .fact:nth-child(3) { padding-left: 0; border-left: 0; }
@@ -105,6 +114,7 @@ code, .mono { font-family: var(--mono); font-size: 0.88em; }
     <a href="#open-source">Open source</a>
     <a href="#work">Work</a>
     <a href="#experience">Experience</a>
+    <!-- writing:nav -->
     <a href="https://github.com/andremuraro">GitHub</a>
     <a href="https://www.linkedin.com/in/andre-muraro">LinkedIn</a>
   </nav>
@@ -180,6 +190,8 @@ code, .mono { font-family: var(--mono); font-size: 0.88em; }
     </article>
   </div>
 </section>
+
+<!-- writing:latest -->
 
 <section id="experience" class="stack" aria-labelledby="exp-h">
   <h2 id="exp-h">Experience</h2>
